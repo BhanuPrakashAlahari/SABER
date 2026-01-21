@@ -1,25 +1,52 @@
 import { useState } from 'react';
-import { SplashScreen } from './components/SplashScreen';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { SplashScreen } from './components/common/SplashScreen';
+import { MobileLayout } from './layouts/MobileLayout';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Feed from './pages/Feed';
+import Search from './pages/Search';
+import Jobs from './pages/Jobs';
+import AppliedJobs from './pages/AppliedJobs';
+import Bookmarks from './pages/Bookmarks';
+import { BottomDock } from './components/common/BottomDock';
+
+const AuthenticatedLayout = () => {
+  return (
+    <div className="relative min-h-screen">
+      <Outlet />
+      <BottomDock />
+    </div>
+  );
+};
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
-
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-4">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-blue-600">Saras</h1>
-      </header>
-      <main className="flex-1 w-full max-w-md flex flex-col items-center gap-4">
-        <div className="p-6 bg-gray-50 rounded-2xl shadow-sm w-full border border-gray-100">
-          <h2 className="text-xl font-semibold mb-2">Welcome</h2>
-          <p className="text-gray-600">Your mobile application is ready.</p>
-        </div>
-      </main>
-    </div>
+    <BrowserRouter>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+
+      {!showSplash && (
+        <MobileLayout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
+            {/* Authenticated Routes with Dock */}
+            <Route element={<AuthenticatedLayout />}>
+              <Route path="/feed" element={<Feed />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/applied" element={<AppliedJobs />} />
+              <Route path="/bookmarks" element={<Bookmarks />} />
+            </Route>
+          </Routes>
+        </MobileLayout>
+      )}
+    </BrowserRouter>
   );
 }
 
