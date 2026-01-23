@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import JobCard from '../components/ui/job-card';
 import { JobSkeleton } from '../components/jobs/JobSkeleton';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Jobs = () => {
     const navigate = useNavigate();
@@ -16,12 +17,22 @@ const Jobs = () => {
     const [activeTab, setActiveTab] = useState<'recommended' | 'all'>('recommended');
     const [loading, setLoading] = useState(true);
     const [match, setMatch] = useState<Match | null>(null);
+    const setShowUpgradeModal = useAuthStore(state => state.setShowUpgradeModal);
 
     const jobs = activeTab === 'recommended' ? recommendedJobs : allJobs;
     const setJobs = activeTab === 'recommended' ? setRecommendedJobs : setAllJobs;
 
     useEffect(() => {
         loadFeed();
+
+        // Listen for global 429 events from axios interceptor
+        const handleRateLimit = () => {
+            console.log("Global 429 event received");
+            setShowUpgradeModal(true);
+        };
+        window.addEventListener('api-rate-limit', handleRateLimit);
+
+        return () => window.removeEventListener('api-rate-limit', handleRateLimit);
     }, []);
 
     const loadFeed = async () => {
@@ -50,6 +61,13 @@ const Jobs = () => {
         try {
             const result = await jobsService.swipe(jobId, direction);
 
+            // Handle case where backend returns 200 OK but with error code
+            if ((result as any).code === 'SWIPE_LIMIT_REACHED') {
+                setShowUpgradeModal(true);
+                if (currentJob) setJobs(prev => [currentJob, ...prev]);
+                return;
+            }
+
             if (direction === 'right') {
                 // Determine if it's a match from the result
                 const isMatch = typeof result === 'object' && result !== null && 'id' in result && (result as Match).reveal_status;
@@ -65,15 +83,22 @@ const Jobs = () => {
                 }
             }
         } catch (error: any) {
-            // Rollback if needed, or handle error (e.g. rate limit)
-            if (error.response?.status === 429) {
-                toast.error("Daily swipe limit reached!", { id: 'swipe-toast' });
+            console.error("Swipe API Error:", error);
+
+            // Check for Rate Limits (429) or Payment Required (402)
+            const status = error.response?.status;
+            const code = error.response?.data?.code;
+
+            if (status === 429 || status === 402 || code === 'SWIPE_LIMIT_REACHED' || code === 'PAYMENT_REQUIRED') {
+                console.log("Triggering Upgrade Modal due to limit/payment error");
+                setShowUpgradeModal(true);
+                // Rollback the card
                 if (currentJob) setJobs(prev => [currentJob, ...prev]);
             } else {
                 toast.error("Something went wrong. Please try again.", { id: 'swipe-toast' });
+                // Rollback the card
                 if (currentJob) setJobs(prev => [currentJob, ...prev]);
             }
-            console.error("Swipe failed:", error);
         }
     };
 
@@ -238,6 +263,8 @@ const Jobs = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Upgrade Modal is handled globally in App.tsx */}
 
             {/* Card Content */}
             <div className="relative w-full max-w-sm h-auto z-10 perspective-1000">

@@ -16,6 +16,8 @@ import { BottomDock } from './components/common/BottomDock';
 import { useAuthStore } from './store/useAuthStore';
 import { authService } from './services/auth';
 import { Toaster } from 'react-hot-toast';
+import { AnimatePresence } from 'framer-motion';
+import { UpgradeModal } from './components/common/UpgradeModal';
 
 // Guard for routes that require the user to be fully onboarded
 const ProtectedLayout = () => {
@@ -46,7 +48,7 @@ const OnboardingGuard = () => {
 const App = () => {
   // Force update
   const [showSplash, setShowSplash] = useState(true);
-  const { isAuthenticated, updateUser, logout } = useAuthStore();
+  const { isAuthenticated, updateUser, logout, showUpgradeModal, setShowUpgradeModal } = useAuthStore();
 
   // Session Check on Mount to handle existing 'auth-storage'
   useEffect(() => {
@@ -105,6 +107,15 @@ const App = () => {
           </Routes>
         </MobileLayout>
       )}
+
+      <AnimatePresence>
+        {showUpgradeModal && (
+          <div className="fixed inset-0 z-[99999]" style={{ pointerEvents: 'auto' }}>
+            <UpgradeModal onClose={() => setShowUpgradeModal(false)} />
+          </div>
+        )}
+      </AnimatePresence>
+
       <Toaster
         position="top-center"
         toastOptions={{
