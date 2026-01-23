@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import JobCard from '../components/ui/job-card';
 import { JobSkeleton } from '../components/jobs/JobSkeleton';
+import { UpgradeModal } from '../components/common/UpgradeModal';
 
 const Jobs = () => {
     const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Jobs = () => {
     const [activeTab, setActiveTab] = useState<'recommended' | 'all'>('recommended');
     const [loading, setLoading] = useState(true);
     const [match, setMatch] = useState<Match | null>(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const jobs = activeTab === 'recommended' ? recommendedJobs : allJobs;
     const setJobs = activeTab === 'recommended' ? setRecommendedJobs : setAllJobs;
@@ -66,8 +68,8 @@ const Jobs = () => {
             }
         } catch (error: any) {
             // Rollback if needed, or handle error (e.g. rate limit)
-            if (error.response?.status === 429) {
-                toast.error("Daily swipe limit reached!", { id: 'swipe-toast' });
+            if (error.response?.data?.code === 'SWIPE_LIMIT_REACHED' || error.response?.status === 429) {
+                setShowUpgradeModal(true);
                 if (currentJob) setJobs(prev => [currentJob, ...prev]);
             } else {
                 toast.error("Something went wrong. Please try again.", { id: 'swipe-toast' });
@@ -237,6 +239,10 @@ const Jobs = () => {
                         </div>
                     </motion.div>
                 )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
             </AnimatePresence>
 
             {/* Card Content */}
