@@ -1,380 +1,279 @@
-import { MapPin, DollarSign, Briefcase, Bookmark, X, Check } from 'lucide-react';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
-
 import { useState, useEffect } from 'react';
+import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { Briefcase, Sparkles } from 'lucide-react';
+import type { Job, Match } from '../services/jobs';
+import { jobsService } from '../services/jobs';
+import { bookmarksService } from '../services/bookmarks';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import JobCard from '../components/ui/job-card';
+import { JobSkeleton } from '../components/jobs/JobSkeleton';
 
 const Jobs = () => {
-    const [appliedJobs, setAppliedJobs] = useState<number[]>([]);
-    const [ignoredJobs, setIgnoredJobs] = useState<number[]>([]);
-    const [savedJobs, setSavedJobs] = useState<number[]>([]);
+    const navigate = useNavigate();
+    const [jobs, setJobs] = useState<Job[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [match, setMatch] = useState<Match | null>(null);
 
     useEffect(() => {
-        const savedApplied = localStorage.getItem('appliedJobs');
-        if (savedApplied) {
-            setAppliedJobs(JSON.parse(savedApplied));
-        }
-
-        const savedIgnored = localStorage.getItem('ignoredJobs');
-        if (savedIgnored) {
-            setIgnoredJobs(JSON.parse(savedIgnored));
-        }
-
-        const savedBookmarks = localStorage.getItem('savedJobs');
-        if (savedBookmarks) {
-            setSavedJobs(JSON.parse(savedBookmarks));
-        }
+        loadFeed();
     }, []);
 
-    const handleNext = (jobId: number) => {
-        // Mark as ignored/passed
-        if (!ignoredJobs.includes(jobId)) {
-            const newIgnored = [...ignoredJobs, jobId];
-            setIgnoredJobs(newIgnored);
-            localStorage.setItem('ignoredJobs', JSON.stringify(newIgnored));
+    const loadFeed = async () => {
+        try {
+            setLoading(true);
+            const data = await jobsService.getFeed();
+            setJobs(data);
+        } catch (error) {
+            console.error("Failed to load feed:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSave = (jobId: number) => {
-        let newSaved;
-        if (savedJobs.includes(jobId)) {
-            newSaved = savedJobs.filter(id => id !== jobId);
-        } else {
-            newSaved = [...savedJobs, jobId];
+    const handleSwipe = async (jobId: string, direction: 'left' | 'right') => {
+        // Optimistic UI: Remove job immediately
+        const currentJob = jobs.find(j => j.id === jobId);
+        setJobs(prev => prev.filter(j => j.id !== jobId));
+
+        // Show immediate feedback for right swipes
+        if (direction === 'right') {
+            toast.success("Connection request sent!", { id: 'swipe-toast' });
         }
-        setSavedJobs(newSaved);
-        localStorage.setItem('savedJobs', JSON.stringify(newSaved));
+
+        try {
+            const result = await jobsService.swipe(jobId, direction);
+
+            if (direction === 'right') {
+                // Determine if it's a match from the result
+                const isMatch = typeof result === 'object' && result !== null && 'id' in result && (result as Match).reveal_status;
+
+                if (isMatch) {
+                    // It's a match! Show the special match modal
+                    setMatch(result as Match);
+                    toast.success("It's a Match! 🔥", {
+                        duration: 5000,
+                        icon: '✨',
+                        id: 'swipe-toast' // This will replace the "Sent" toast if it's still there
+                    });
+                }
+            }
+        } catch (error: any) {
+            // Rollback if needed, or handle error (e.g. rate limit)
+            if (error.response?.status === 429) {
+                toast.error("Daily swipe limit reached!", { id: 'swipe-toast' });
+                if (currentJob) setJobs(prev => [currentJob, ...prev]);
+            } else {
+                toast.error("Something went wrong. Please try again.", { id: 'swipe-toast' });
+                if (currentJob) setJobs(prev => [currentJob, ...prev]);
+            }
+            console.error("Swipe failed:", error);
+        }
     };
 
-    const handleApply = (jobId: number) => {
-        if (appliedJobs.includes(jobId)) return;
-        const newApplied = [...appliedJobs, jobId];
-        setAppliedJobs(newApplied);
-        localStorage.setItem('appliedJobs', JSON.stringify(newApplied));
+    const handleBookmark = async (jobId: string) => {
+        // Optimistic UI: Remove job immediately to show next card
+        const currentJob = jobs.find(j => j.id === jobId);
+        setJobs(prev => prev.filter(j => j.id !== jobId));
 
-        // Wait for visual feedback then advance
-        // No explicit advance needed as filtering will remove it
-    };
-    const jobs = [
-        {
-            id: 1,
-            title: "Senior Frontend Developer",
-            poster: { name: "John Doe", avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop", role: "Frontend Lead" },
-            company: "TechFlow",
-            location: "San Francisco, CA (Remote)",
-            salary: "$120k - $160k",
-            type: "Full-time",
-            postedAt: "2h ago",
-            color: "bg-blue-600",
-            description: "We are looking for an experienced Frontend Developer to lead our core product team. You will be working with React, TypeScript, and Tailwind CSS to build beautiful user interfaces."
-        },
-        {
-            id: 2,
-            title: "Product Designer",
-            poster: { name: "Jane Smith", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop", role: "Head of Design" },
-            company: "Creative Studio",
-            location: "New York, NY",
-            salary: "$100k - $140k",
-            type: "Full-time",
-            postedAt: "5h ago",
-            color: "bg-purple-600",
-            description: "Join our award-winning design team. We are looking for someone with a keen eye for detail and a passion for creating intuitive user experiences."
-        },
-        {
-            id: 3,
-            title: "Product Manager",
-            poster: { name: "Mike Ross", avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop", role: "Product Director" },
-            company: "Pearson Hardman",
-            location: "Chicago, IL",
-            salary: "$130k - $180k",
-            type: "Full-time",
-            postedAt: "1d ago",
-            color: "bg-emerald-600",
-            description: "Lead the strategy and execution of our flagship product. You will work closely with engineering and design to deliver value to our customers."
-        },
-        {
-            id: 4,
-            title: "Software Engineer (Backend)",
-            poster: { name: "Sarah Connor", avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop", role: "Engineering Manager" },
-            company: "Skynet Systems",
-            location: "Austin, TX (Hybrid)",
-            salary: "$115k - $155k",
-            type: "Full-time",
-            postedAt: "1d ago",
-            color: "bg-red-600",
-            description: "Build scalable backend services using Go and Kubernetes. Experience with distributed systems is a huge plus."
-        },
-        {
-            id: 5,
-            title: "Full Stack Developer",
-            poster: { name: "Alex Murphy", avatarUrl: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&auto=format&fit=crop", role: "Tech Lead" },
-            company: "OCP Corp",
-            location: "Detroit, MI",
-            salary: "$110k - $150k",
-            type: "Contract",
-            postedAt: "2d ago",
-            color: "bg-slate-600",
-            description: "We are modernizing our legacy systems. Looking for a developer proficient in both React and Node.js to help us transition."
-        },
-        {
-            id: 6,
-            title: "Chief Executive Officer",
-            poster: { name: "Bruce Wayne", avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop", role: "Owner" },
-            company: "Wayne Enterprises",
-            location: "Gotham City",
-            salary: "$500k+",
-            type: "Full-time",
-            postedAt: "3d ago",
-            color: "bg-indigo-900",
-            description: "Looking for a capable executive to manage day-to-day operations while I am... away. Must be discreet and handle high-pressure situations."
-        },
-        {
-            id: 7,
-            title: "Creative Director",
-            poster: { name: "Diana Prince", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop", role: "Design Lead" },
-            company: "Themyscira Arts",
-            location: "Washington, DC",
-            salary: "$140k - $190k",
-            type: "Full-time",
-            postedAt: "3d ago",
-            color: "bg-amber-600",
-            description: "Lead our creative vision across all media channels. We cherish strength, wisdom, and beautiful design."
-        },
-        {
-            id: 8,
-            title: "Junior Web Developer",
-            poster: { name: "Peter Parker", avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop", role: "Freelancer" },
-            company: "Daily Bugle",
-            location: "New York, NY",
-            salary: "$60k - $80k",
-            type: "Part-time",
-            postedAt: "4d ago",
-            color: "bg-red-500",
-            description: "Help us maintain our news website. Flexible hours. Must be able to get pictures of Spiderman... I mean, bugs. Fix bugs."
-        },
-        {
-            id: 9,
-            title: "Lead Robotics Engineer",
-            poster: { name: "Tony Stark", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop", role: "CTO" },
-            company: "Stark Industries",
-            location: "Malibu, CA",
-            salary: "$250k - $400k",
-            type: "Full-time",
-            postedAt: "5d ago",
-            color: "bg-yellow-600",
-            description: "Working on cutting-edge armor technology. Need someone who understands AI, propulsion systems, and advanced metallurgy."
-        },
-        {
-            id: 10,
-            title: "Security Operations Specialist",
-            poster: { name: "Natasha Romanoff", avatarUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop", role: "Head of Security" },
-            company: "SHIELD",
-            location: "Unknown",
-            salary: "$120k - $160k",
-            type: "Full-time",
-            postedAt: "1w ago",
-            color: "bg-zinc-800",
-            description: "Cybersecurity and physical security role. Requires extensive background checks. Travel required."
-        },
-        {
-            id: 11,
-            title: "Marketing Manager",
-            poster: { name: "Mike Ross", avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop", role: "Product Director" },
-            company: "Pearson Hardman",
-            location: "New York, NY",
-            salary: "$110k - $150k",
-            type: "Full-time",
-            postedAt: "1w ago",
-            color: "bg-teal-600",
-            description: "Drive growth for our new legal tech division. Looking for someone with a strong background in B2B marketing."
-        },
-        {
-            id: 12,
-            title: "AI Research Scientist",
-            poster: { name: "Sarah Connor", avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop", role: "Engineering Manager" },
-            company: "Cyberdyne",
-            location: "San Francisco, CA",
-            salary: "$180k - $250k",
-            type: "Full-time",
-            postedAt: "1w ago",
-            color: "bg-cyan-600",
-            description: "Researching neural networks and autonomous learning. Help us build the future of intelligence."
-        },
-        {
-            id: 13,
-            title: "UI Engineer",
-            poster: { name: "Jane Smith", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop", role: "Head of Design" },
-            company: "Creative Studio",
-            location: "Remote",
-            salary: "$90k - $120k",
-            type: "Contract",
-            postedAt: "2w ago",
-            color: "bg-pink-600",
-            description: "Implement pixel-perfect designs. Must know Storybook and Motion libraries."
-        },
-        {
-            id: 14,
-            title: "DevOps Engineer",
-            poster: { name: "John Doe", avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop", role: "Frontend Lead" },
-            company: "TechFlow",
-            location: "Denver, CO",
-            salary: "$130k - $170k",
-            type: "Full-time",
-            postedAt: "2w ago",
-            color: "bg-orange-600",
-            description: "Manage our CI/CD pipelines and AWS infrastructure. Terraform experience required."
-        },
-        {
-            id: 15,
-            title: "Data Analyst",
-            poster: { name: "Diana Prince", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop", role: "Design Lead" },
-            company: "Museum of Antiquities",
-            location: "Paris, France",
-            salary: "$80k - $110k",
-            type: "Full-time",
-            postedAt: "3w ago",
-            color: "bg-rose-600",
-            description: "Analyze historical data trends. Must be fluent in multiple ancient languages... or just SQL."
+        try {
+            await bookmarksService.createBookmark(jobId, "Saved from Discovery");
+            toast.success("Job bookmarked!", {
+                icon: '🔖',
+                position: 'bottom-center'
+            });
+        } catch (error) {
+            // Rollback if failing
+            if (currentJob) {
+                setJobs(prev => [currentJob, ...prev]);
+            }
+            console.error("Failed to bookmark job:", error);
+            toast.error("Failed to bookmark job");
         }
-    ];
+    };
 
-    // Filter jobs that are not applied and not ignored
-    const availableJobs = jobs.filter(
-        job => !appliedJobs.includes(job.id) && !ignoredJobs.includes(job.id)
-    );
-
-    const currentJob = availableJobs[0];
-
+    // Animation Hooks
     const x = useMotionValue(0);
-    const rotate = useTransform(x, [-200, 200], [-10, 10]);
+    const rotate = useTransform(x, [-200, 200], [-8, 8]);
     const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
+    const scale = useTransform(x, [-200, 0, 200], [0.9, 1, 0.9]);
+
+    // Background color indicators based on swipe
+    const bgLikeOpacity = useTransform(x, [0, 150], [0, 0.4]);
+    const bgDislikeOpacity = useTransform(x, [-150, 0], [0.4, 0]);
 
     const handleDragEnd = (_: any, info: any) => {
         const offset = info.offset.x;
         const velocity = info.velocity.x;
+        const currentJob = jobs[0];
+
+        if (!currentJob) return;
 
         if (offset < -100 || velocity < -500) {
-            handleNext(currentJob.id);
+            handleSwipe(currentJob.id, 'left');
         } else if (offset > 100 || velocity > 500) {
-            handleApply(currentJob.id);
+            handleSwipe(currentJob.id, 'right');
         }
     };
 
-    if (!currentJob) {
+    if (loading) {
         return (
-            <div className="h-screen w-full bg-black text-white flex flex-col items-center justify-center p-6 text-center">
-                <Briefcase className="w-16 h-16 text-zinc-600 mb-6" />
-                <h2 className="text-2xl font-bold mb-2">No more jobs!</h2>
-                <p className="text-zinc-400">You've viewed all available listings for now.</p>
+            <div className="h-screen w-full bg-black text-white overflow-hidden relative flex flex-col items-center justify-center">
+                {/* Ambient Background */}
+                <div className="absolute inset-0 bg-neutral-950">
+                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse"></div>
+                    <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse"></div>
+                </div>
+
+                <div className="relative w-full max-w-sm h-auto z-10 perspective-1000">
+                    {/* Background Skeleton for Depth */}
+                    <div className="absolute top-0 w-full h-[520px] bg-[#1A1A1A] rounded-[32px] border border-white/5 scale-[0.95] translate-y-4 opacity-30 shadow-2xl" />
+
+                    {/* Main Skeleton */}
+                    <JobSkeleton />
+                </div>
+            </div>
+        );
+    }
+
+    if (jobs.length === 0) {
+        return (
+            <div className="flex flex-col min-h-screen bg-black text-white items-center justify-center p-6 text-center">
+                <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center mb-6 border border-zinc-800">
+                    <Briefcase className="w-8 h-8 text-zinc-600" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">You're all caught up!</h2>
+                <p className="text-zinc-500 max-w-xs mx-auto">Check back later for more opportunities tailored to your skills.</p>
                 <button
-                    onClick={() => {
-                        setIgnoredJobs([]);
-                        localStorage.removeItem('ignoredJobs');
-                    }}
-                    className="mt-8 px-6 py-3 bg-white text-black rounded-full font-bold text-sm hover:bg-zinc-200 transition-colors"
+                    onClick={loadFeed}
+                    className="mt-8 px-8 py-3 bg-white text-black rounded-full text-sm font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
                 >
-                    Start Over
+                    Refresh Feed
                 </button>
             </div>
         );
     }
 
+    const currentJob = jobs[0];
+    const nextJob = jobs[1]; // Preview for the next card underneath
 
+    const formatSalary = (range: number[]) => {
+        if (!range || range.length !== 2) return '';
+        // Format as K, e.g. 120k - 150k
+        const min = Math.round(range[0] / 1000);
+        const max = Math.round(range[1] / 1000);
+        return `₹${min}k - ₹${max}k`;
+    };
 
     return (
         <div className="h-screen w-full bg-black text-white overflow-hidden relative flex flex-col items-center justify-center">
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={currentJob.id}
-                    className="h-full w-full flex flex-col p-6 pt-16 pb-24 relative cursor-grab active:cursor-grabbing"
-                    style={{ x, rotate, opacity }}
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    onDragEnd={handleDragEnd}
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1, x: 0 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                >
-                    {/* Background decoration/Gradient */}
-                    <div className={`absolute top-0 left-0 right-0 h-1/3 ${currentJob.color} opacity-20 blur-[100px] pointer-events-none transition-colors duration-500`} />
 
-                    {/* Header: Poster Info */}
-                    <div className="flex items-center gap-3 mb-6 z-10 pointer-events-none">
-                        <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/10">
-                            <img src={currentJob.poster.avatarUrl} alt={currentJob.poster.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-semibold text-white">{currentJob.poster.name}</p>
-                            <p className="text-[10px] text-zinc-400">{currentJob.poster.role} at {currentJob.company}</p>
-                        </div>
-                    </div>
+            {/* Ambient Background */}
+            <div className="absolute inset-0 bg-neutral-950">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
+            </div>
 
-                    {/* Main Content */}
-                    <div className="flex-1 flex flex-col justify-center z-10 space-y-6">
+            {/* Match Modal */}
+            <AnimatePresence>
+                {match && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="absolute inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", bounce: 0.5 }}
+                            className="w-20 h-20 bg-gradient-to-tr from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mb-6 shadow-2xl shadow-emerald-500/20"
+                        >
+                            <Sparkles className="w-10 h-10 text-black fill-current" />
+                        </motion.div>
 
-                        <div>
-                            <div className="flex items-start justify-between">
-                                <h2 className="text-2xl font-bold leading-tight mb-2 max-w-[90%] pointer-events-none">{currentJob.title}</h2>
-                            </div>
-                            <div className="flex items-center gap-2 mt-3">
-                                <span className="h-8 px-3 rounded-full bg-zinc-900/80 border border-zinc-800 text-zinc-400 text-xs font-medium flex items-center justify-center backdrop-blur-md pointer-events-none">
-                                    {currentJob.postedAt}
-                                </span>
+                        <h2 className="text-5xl font-black text-white mb-2 tracking-tight text-center">
+                            It's a Match!
+                        </h2>
 
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevent drag
-                                        handleSave(currentJob.id);
-                                    }}
-                                    className={`ml-auto w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center transition-colors ${savedJobs.includes(currentJob.id) ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
-                                >
-                                    <Bookmark className={`w-4 h-4 ${savedJobs.includes(currentJob.id) ? 'fill-current' : ''}`} />
-                                </button>
+                        <div className="bg-[#121212] border border-white/10 rounded-3xl p-8 w-full max-w-sm mb-8 relative overflow-hidden shadow-2xl">
+                            <div className="flex flex-col items-center text-center">
+                                <h3 className="text-2xl font-bold mb-1 text-white">{match.job.company.name}</h3>
+                                <p className="text-zinc-500 mb-6 font-medium">wants to connect with you</p>
+
+                                <div className="w-full p-4 bg-zinc-900/50 rounded-2xl border border-white/5 text-left">
+                                    <p className="text-xs text-emerald-400 font-bold uppercase tracking-widest mb-2">Why we matched</p>
+                                    <p className="text-sm text-zinc-300 leading-relaxed font-light">
+                                        "{match.explainability_json.reason}"
+                                    </p>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2 pointer-events-none">
-                            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
-                                <Briefcase className="w-3 h-3" />
-                                {currentJob.type}
-                            </span>
-                            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
-                                <MapPin className="w-3 h-3" />
-                                {currentJob.location}
-                            </span>
-                            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
-                                <DollarSign className="w-3 h-3" />
-                                {currentJob.salary}
-                            </span>
+                        <div className="flex flex-col w-full max-w-sm gap-3">
+                            <button
+                                onClick={() => navigate('/matches')}
+                                className="w-full py-4 bg-white text-black rounded-2xl font-bold text-lg hover:bg-zinc-200 transition-colors shadow-xl shadow-white/5"
+                            >
+                                Send a Message
+                            </button>
+                            <button
+                                onClick={() => setMatch(null)}
+                                className="w-full py-4 bg-[#121212] border border-white/10 text-white rounded-2xl font-medium hover:bg-zinc-900 transition-colors"
+                            >
+                                Back to Jobs
+                            </button>
                         </div>
-
-                        {/* Description */}
-                        <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl p-4 pointer-events-none">
-                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">Job Description</h4>
-                            <p className="text-zinc-200 leading-relaxed font-light text-sm">
-                                {currentJob.description}
-                            </p>
-                        </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                )}
             </AnimatePresence>
 
-            {/* Footer hint */}
-            <div className="absolute bottom-24 w-full flex justify-between px-12 pointer-events-none opacity-50">
-                <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center text-red-500">
-                        <X className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-600">Pass</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center text-green-500">
-                        <Check className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-600">Apply</span>
-                </div>
+            {/* Card Content */}
+            <div className="relative w-full max-w-sm h-auto z-10 perspective-1000">
+                {/* Background Cards for Depth */}
+                {nextJob && (
+                    <div className="absolute top-0 w-full h-full bg-[#1A1A1A] rounded-[32px] border border-white/5 scale-[0.95] translate-y-4 opacity-50 shadow-2xl" />
+                )}
+
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentJob.id}
+                        className="relative w-full h-auto cursor-grab active:cursor-grabbing preserve-3d"
+                        style={{ x, rotate, opacity, scale }}
+                        drag={match ? false : "x"}
+                        dragConstraints={{ left: 0, right: 0 }}
+                        onDragEnd={handleDragEnd}
+                        initial={{ scale: 0.95, opacity: 0, y: 50 }}
+                        animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+                    >
+                        {/* Swipe Overlay Indicators */}
+                        <motion.div style={{ opacity: bgLikeOpacity }} className="absolute inset-0 z-30 bg-gradient-to-r from-transparent to-emerald-500/30 pointer-events-none rounded-[32px] backdrop-blur-[1px]" />
+                        <motion.div style={{ opacity: bgDislikeOpacity }} className="absolute inset-0 z-30 bg-gradient-to-l from-transparent to-red-500/30 pointer-events-none rounded-[32px] backdrop-blur-[1px]" />
+
+                        <JobCard
+                            title={currentJob.problem_statement}
+                            company={currentJob.company?.name}
+                            rate={formatSalary(currentJob.constraints?.salary_range || [])}
+                            location={currentJob.constraints?.location || 'Remote'}
+                            type={currentJob.constraints?.employment_type || 'Full-time'}
+                            experience={`${currentJob.constraints?.experience_years || 0}+ years`}
+                            expectations={currentJob.expectations}
+                            skills={currentJob.skills_required}
+                            logoUrl={currentJob.company?.logo_url}
+                            coverImageUrl={currentJob.company?.cover_image_url}
+                            className="h-[520px]"
+                            onSave={() => handleBookmark(currentJob.id)}
+                        />
+                    </motion.div>
+                </AnimatePresence>
             </div>
+
+            {/* Minimal Branding */}
+            <div className="absolute bottom-10 text-center opacity-20 pointer-events-none">
+                <p className="text-[10px] tracking-[0.3em] font-bold uppercase text-white">SABER DISCOVERY</p>
+            </div>
+
         </div>
     );
 };

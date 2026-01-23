@@ -1,21 +1,20 @@
-import { Home, Search, Briefcase, ClipboardCheck, Bookmark, LogOut } from 'lucide-react';
+import { Home, Briefcase, ClipboardCheck, Bookmark, LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
-import { removeCookie } from '../../utils/cookieUtils';
+// import { removeCookie } from '../../utils/cookieUtils';
 
 export const BottomDock = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        removeCookie('token');
-        removeCookie('user');
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user');
         localStorage.clear(); // Clear other app state if any
         navigate('/login');
     };
 
     const navItems = [
         { icon: Home, label: 'Feed', path: '/feed' },
-        { icon: Search, label: 'Search', path: '/search' },
         { icon: Briefcase, label: 'Jobs', path: '/jobs' },
         { icon: ClipboardCheck, label: 'Applied', path: '/applied' },
         { icon: Bookmark, label: 'Saved', path: '/bookmarks' },

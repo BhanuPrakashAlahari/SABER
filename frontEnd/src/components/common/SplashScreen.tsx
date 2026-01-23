@@ -17,18 +17,18 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     }, []);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-blue-600 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black overflow-hidden">
             <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={
                     startZoom
-                        ? { scale: 100, opacity: 0 } // Zoom in hugely, then fade out
+                        ? { scale: 50, opacity: 0, filter: "blur(20px)" } // Smooth zoom out/fade
                         : { scale: 1, opacity: 1 }   // Normal state
                 }
                 transition={
                     startZoom
-                        ? { duration: 0.8, ease: "easeInOut" } // Fast zoom
-                        : { duration: 0.8, ease: "easeOut" }   // Gentle entry
+                        ? { duration: 1, ease: [0.43, 0.13, 0.23, 0.96] } // Premium cubic-bezier
+                        : { duration: 0.8, ease: "easeOut" }
                 }
                 onAnimationComplete={() => {
                     if (startZoom) {
@@ -37,9 +37,13 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 }}
                 className="flex items-center justify-center"
             >
-                <span className="text-white font-bold text-9xl select-none font-sans">
-                    S
-                </span>
+                <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] overflow-hidden p-4">
+                    <img
+                        src="/logo.png"
+                        alt="SABER Logo"
+                        className="w-full h-full object-contain"
+                    />
+                </div>
             </motion.div>
         </div>
     );

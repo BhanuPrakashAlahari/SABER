@@ -1,308 +1,334 @@
-import { useMemo, useState, useEffect } from 'react';
-import { SocialStories, type Story } from '../components/ui/social-stories';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import { Github, Linkedin, X, MapPin, DollarSign, Globe, Briefcase, User as UserIcon, Mail, CheckCircle, Calendar, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { feedService, type Article } from '../services/feed';
 
-import { FeedPost } from '../components/feed/FeedPost';
+const ProfileModal = ({ onClose }: { onClose: () => void }) => {
+    const { user } = useAuthStore();
 
-const Feed = () => {
-    const [savedPosts, setSavedPosts] = useState<number[]>([]);
+    if (!user) return null;
 
-    useEffect(() => {
-        const saved = localStorage.getItem('savedPosts');
-        if (saved) {
-            setSavedPosts(JSON.parse(saved));
-        }
-    }, []);
+    const accounts = user.oauth_accounts || [];
+    // Handle constraints safely
+    const constraints = user.constraints_json || {};
 
-    const handleSavePost = (postId: number) => {
-        let newSaved;
-        if (savedPosts.includes(postId)) {
-            newSaved = savedPosts.filter(id => id !== postId);
-        } else {
-            newSaved = [...savedPosts, postId];
-        }
-        setSavedPosts(newSaved);
-        localStorage.setItem('savedPosts', JSON.stringify(newSaved));
-    };
-    // Dummy Data for the stories
-    const stories: Story[] = useMemo(() => [
-        {
-            id: "1",
-            platform: "instagram",
-            mediaUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1000&auto=format&fit=crop",
-            linkUrl: "https://instagram.com",
-            caption: "Loving the new vibes!",
-            duration: 5,
-        },
-        {
-            id: "2",
-            platform: "instagram",
-            mediaUrl: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000&auto=format&fit=crop",
-            linkUrl: "https://instagram.com",
-            caption: "Work hard play hard.",
-            duration: 5,
-        }
-    ], []);
-
-    // Initial Profiles
-    const initialProfiles = [
-        { id: "1", name: "John Doe", avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop" },
-        { id: "2", name: "Jane Smith", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop" },
-        { id: "3", name: "Mike Ross", avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop" },
-        { id: "4", name: "Sarah Connor", avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop" },
-        { id: "5", name: "Alex Murphy", avatarUrl: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&auto=format&fit=crop" },
-        { id: "6", name: "Bruce Wayne", avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop" },
-    ];
-
-    // Dummy Post Data
-    const posts = [
-        {
-            id: 1,
-            username: "John Doe",
-            avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=1000&auto=format&fit=crop",
-            caption: "Coding late into the night. #developer #focus",
-            likes: 1240,
-            comments: 45,
-            timeAgo: "2 HOURS AGO",
-            location: "San Francisco, CA",
-            musicTrack: "Lo-Fi Beats • Coding Mode"
-        },
-        {
-            id: 2,
-            username: "Jane Smith",
-            avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1000&auto=format&fit=crop",
-            caption: "Team brainstorming session. 🚀",
-            likes: 892,
-            comments: 23,
-            timeAgo: "4 HOURS AGO",
-            location: "New York, NY"
-        },
-        {
-            id: 3,
-            username: "Mike Ross",
-            avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1664575602276-acd073f104c1?w=1000&auto=format&fit=crop",
-            caption: "Minimalist workspace setup.",
-            likes: 3450,
-            comments: 112,
-            timeAgo: "6 HOURS AGO",
-            musicTrack: "Hans Zimmer • Time"
-        },
-        {
-            id: 4,
-            username: "Sarah Connor",
-            avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1000&auto=format&fit=crop",
-            caption: "Coffee first, code later. ☕️",
-            likes: 567,
-            comments: 18,
-            timeAgo: "8 HOURS AGO",
-            location: "Seattle, WA"
-        },
-        {
-            id: 5,
-            username: "Alex Murphy",
-            avatarUrl: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1000&auto=format&fit=crop",
-            caption: "Future is now. #robotics #ai",
-            likes: 2100,
-            comments: 89,
-            timeAgo: "10 HOURS AGO",
-            musicTrack: "Daft Punk • Harder, Better, Faster, Stronger"
-        },
-        {
-            id: 6,
-            username: "Bruce Wayne",
-            avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=1000&auto=format&fit=crop",
-            caption: "Night view from the top.",
-            likes: 9999,
-            comments: 500,
-            timeAgo: "12 HOURS AGO",
-            location: "Gotham City"
-        },
-        {
-            id: 7,
-            username: "John Doe",
-            avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=1000&auto=format&fit=crop",
-            caption: "Debugging... typically.",
-            likes: 670,
-            comments: 34,
-            timeAgo: "1 DAY AGO"
-        },
-        {
-            id: 8,
-            username: "Jane Smith",
-            avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1000&auto=format&fit=crop",
-            caption: "Great diversity in the new hiring batch! 🌍",
-            likes: 1540,
-            comments: 67,
-            timeAgo: "1 DAY AGO",
-            musicTrack: "Pharrell Williams • Happy"
-        },
-        {
-            id: 9,
-            username: "Mike Ross",
-            avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1000&auto=format&fit=crop",
-            caption: "Design principles 101.",
-            likes: 980,
-            comments: 41,
-            timeAgo: "2 DAYS AGO"
-        },
-        {
-            id: 10,
-            username: "Sarah Connor",
-            avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop",
-            imageUrl: "https://images.unsplash.com/photo-1531297461136-82lw8e3r2p?w=1000&auto=format&fit=crop",
-            caption: "System upgrade complete.",
-            likes: 2200,
-            comments: 105,
-            timeAgo: "2 DAYS AGO",
-            musicTrack: "The Chemical Brothers • Go"
-        }
-    ];
-
-    const [activeProfiles, setActiveProfiles] = useState(initialProfiles);
-    const [visitedProfiles, setVisitedProfiles] = useState<typeof initialProfiles>([]);
-    const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
-
-    const handleStoryComplete = (profileId: string) => {
-        // Move to visited if it's currently active
-        const profileToMove = activeProfiles.find(p => p.id === profileId);
-        if (profileToMove) {
-            setActiveProfiles(prev => prev.filter(p => p.id !== profileId));
-            setVisitedProfiles(prev => [...prev, profileToMove]);
-        }
-    };
-
-    // Get the combined list of profiles for navigation order
-    // Order: Active profiles, then Visited profiles (in their current order)
-    const allProfiles = useMemo(() => [...activeProfiles, ...visitedProfiles], [activeProfiles, visitedProfiles]);
-
-    const handleNextProfile = (currentId: string) => {
-        const currentIndex = allProfiles.findIndex(p => p.id === currentId);
-        if (currentIndex < allProfiles.length - 1) {
-            // Check if we need to mark the current one as visited
-
-            // Actually, if we move it to visited, it goes to the end of the list!
-            // This disrupts the "linear swipe" if we strictly follow "active then visited".
-            // If I finish Active #1, it becomes Visited #Last.
-            // The Next profile is Active #2 (which becomes Active #1).
-
-            // Simplest UX:
-            // If I am browsing Active Profile #1 and finish it:
-            // 1. Move #1 to Visited.
-            // 2. Open Active #2 (which is now at index 0 of active list).
-
-            // If I am browsing Visited Profile #1 and finish it:
-            // 1. Open Visited Profile #2.
-
-            // Let's rely on finding the next logical profile ID.
-
-            // Finds the profile coming after the current one in the current view
-            const indexInActive = activeProfiles.findIndex(p => p.id === currentId);
-            if (indexInActive !== -1) {
-                // It's an active profile
-                if (indexInActive < activeProfiles.length - 1) {
-                    // Go to next active
-                    setCurrentProfileId(activeProfiles[indexInActive + 1].id);
-                } else {
-                    // No more active, go to first visited?
-                    if (visitedProfiles.length > 0) {
-                        setCurrentProfileId(visitedProfiles[0].id);
-                    } else {
-                        // End of all stories
-                        setCurrentProfileId(null);
-                    }
-                }
-                // Mark as completed/visited
-                handleStoryComplete(currentId);
-            } else {
-                // It's a visited profile
-                const indexInVisited = visitedProfiles.findIndex(p => p.id === currentId);
-                if (indexInVisited !== -1 && indexInVisited < visitedProfiles.length - 1) {
-                    setCurrentProfileId(visitedProfiles[indexInVisited + 1].id);
-                } else {
-                    // End of everything
-                    setCurrentProfileId(null);
-                }
-            }
-        } else {
-            // Fallback or close
-            // Mark as completed/visited just in case
-            handleStoryComplete(currentId);
-            setCurrentProfileId(null);
-        }
-    };
-
-    const handlePrevProfile = (currentId: string) => {
-        // Simple logic: navigate to the previous profile in the visual list
-        // Note: We don't change visited status on prev
-        const currentIndex = allProfiles.findIndex(p => p.id === currentId);
-        if (currentIndex > 0) {
-            setCurrentProfileId(allProfiles[currentIndex - 1].id);
+    const getProviderIcon = (provider: string) => {
+        switch (provider) {
+            case 'github': return <Github className="w-5 h-5" />;
+            case 'linkedin': return <Linkedin className="w-5 h-5 text-[#0077b5]" />;
+            case 'google': return <Mail className="w-5 h-5 text-red-500" />;
+            default: return <Globe className="w-5 h-5" />;
         }
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-black text-white">
-            {/* Social Stories Section */}
-            <div className="w-full border-b border-zinc-900 py-4">
-                <div className="flex gap-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-                    {/* Active Stories (Unvisited) */}
-                    {activeProfiles.map((profile) => (
-                        <SocialStories
-                            key={profile.id}
-                            stories={stories}
-                            profile={profile}
-                            isVisited={false}
-                            isOpen={currentProfileId === profile.id}
-                            onOpen={() => setCurrentProfileId(profile.id)}
-                            onClose={() => setCurrentProfileId(null)}
-                            onNextProfile={() => handleNextProfile(profile.id)}
-                            onPrevProfile={() => handlePrevProfile(profile.id)}
-                            onAllStoriesViewed={() => handleStoryComplete(profile.id)}
-                        />
-                    ))}
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: "100%", opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="w-full max-w-md bg-[#121212] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative max-h-[85vh] overflow-y-auto no-scrollbar"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header Image / Pattern */}
+                <div className="h-32 bg-gradient-to-tr from-zinc-900 via-zinc-800 to-zinc-900 relative">
+                    {/* Decorative Elements */}
+                    <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
 
-                    {/* Visited Stories */}
-                    {visitedProfiles.map((profile) => (
-                        <SocialStories
-                            key={profile.id}
-                            stories={stories}
-                            profile={profile}
-                            isVisited={true}
-                            isOpen={currentProfileId === profile.id}
-                            onOpen={() => setCurrentProfileId(profile.id)}
-                            onClose={() => setCurrentProfileId(null)}
-                        />
-                    ))}
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-colors border border-white/10 z-10"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-            </div>
 
-            {/* Feed Section */}
-            <div className="pb-20">
-                {posts.map((post) => (
-                    <FeedPost
-                        key={post.id}
-                        id={post.id}
-                        username={post.username}
-                        avatarUrl={post.avatarUrl}
-                        imageUrl={post.imageUrl}
-                        caption={post.caption}
-                        likes={post.likes}
-                        comments={post.comments}
-                        timeAgo={post.timeAgo}
-                        location={post.location}
-                        musicTrack={post.musicTrack}
-                        isSaved={savedPosts.includes(post.id)}
-                        onSave={() => handleSavePost(post.id)}
-                    />
-                ))}
+                {/* Profile Content */}
+                <div className="px-6 pb-8 -mt-14 relative z-10">
+                    {/* Avatar */}
+                    <div className="flex justify-between items-end mb-4">
+                        <div className="w-28 h-28 rounded-full border-[6px] border-[#121212] bg-zinc-800 overflow-hidden shadow-2xl relative">
+                            {user.photo_url ? (
+                                <img
+                                    src={user.photo_url}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                    }}
+                                />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center text-zinc-500 fallback-icon ${user.photo_url ? 'hidden' : ''}`}>
+                                <UserIcon className="w-12 h-12" />
+                            </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        {user.onboarding && (
+                            <div className="mb-4 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded-full border border-emerald-500/20 shadow-lg shadow-emerald-900/20 backdrop-blur-md uppercase tracking-wider">
+                                Active
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Name & Role */}
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-bold text-white mb-1 tracking-tight">{user.name || 'User'}</h2>
+                        <div className="flex items-center gap-2 text-zinc-400 text-sm mb-4">
+                            <Mail className="w-4 h-4" />
+                            <span className="font-medium tracking-wide">{user.email}</span>
+                        </div>
+
+                        <div className="inline-flex items-center">
+                            <span className="px-4 py-1.5 bg-white text-black text-xs font-bold rounded-full shadow-lg shadow-white/10 uppercase tracking-widest">
+                                {user.role}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Intent Section */}
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                        <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2">Intent</p>
+                            <p className="text-white font-semibold text-lg">{user.intent_text || 'Opportunities'}</p>
+                        </div>
+                        <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2">Why</p>
+                            <p className="text-white font-semibold text-lg">{user.why_text || 'Networking'}</p>
+                        </div>
+                    </div>
+
+                    {/* Preferences */}
+                    <div className="mb-8">
+                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 ml-1">Preferences</h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-sm font-medium text-zinc-300">Remote Only</span>
+                                </div>
+                                <span className="text-sm font-bold text-white bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                                    {constraints.remote_only ? 'Yes' : 'No'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                                        <DollarSign className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-sm font-medium text-zinc-300">Target Salary</span>
+                                </div>
+                                <span className="text-sm font-bold text-white bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                                    {constraints.preferred_salary ? `$${constraints.preferred_salary.toLocaleString()}` : 'N/A'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400">
+                                        <MapPin className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-sm font-medium text-zinc-300">Location</span>
+                                </div>
+                                <span className="text-sm font-bold text-white bg-white/5 px-3 py-1 rounded-lg border border-white/5">
+                                    {constraints.location_preference || 'Any'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Connected Accounts */}
+                    <div>
+                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4 ml-1">Linked Accounts</h3>
+                        <div className="space-y-2">
+                            {accounts.map((acc: any) => (
+                                <div key={acc.id} className="flex items-center p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800/50 hover:bg-zinc-900 transition-colors">
+                                    <div className="p-2 bg-white/5 rounded-xl text-zinc-300 mr-3 border border-white/5">
+                                        {getProviderIcon(acc.provider)}
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="text-sm font-bold text-white capitalize">{acc.provider}</p>
+                                        <p className="text-xs text-zinc-500 truncate font-mono mt-0.5 opacity-60">{acc.provider_user_id}</p>
+                                    </div>
+                                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                                        <CheckCircle className="w-4 h-4" />
+                                    </div>
+                                </div>
+                            ))}
+                            {accounts.length === 0 && (
+                                <p className="text-sm text-zinc-600 italic px-2">No connected accounts found.</p>
+                            )}
+                        </div>
+                    </div>
+
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+const Feed = () => {
+    const [showProfile, setShowProfile] = useState(false);
+    const { user } = useAuthStore();
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadFeed = async () => {
+            setLoading(true);
+
+            // Check if there's cached data in sessionStorage
+            const cached = sessionStorage.getItem('tech_feed_cache');
+            if (cached) {
+                try {
+                    setArticles(JSON.parse(cached));
+                    setLoading(false);
+                    return;
+                } catch (e) {
+                    console.error("Cache parse error", e);
+                }
+            }
+
+            const data = await feedService.getTechFeed();
+            setArticles(data);
+
+            if (data.length > 0) {
+                sessionStorage.setItem('tech_feed_cache', JSON.stringify(data));
+            }
+            setLoading(false);
+        };
+        loadFeed();
+    }, []);
+
+    // Logic to resolve avatar from various sources
+    const accounts = user?.oauth_accounts || [];
+    const googleAccount = accounts.find(acc => acc.provider === 'google');
+    const linkedinAccount = accounts.find(acc => acc.provider === 'linkedin');
+    const githubAccount = accounts.find(acc => acc.provider === 'github');
+
+    const avatarUrl =
+        googleAccount?.raw_data_json?.picture ||
+        linkedinAccount?.raw_data_json?.picture ||
+        githubAccount?.raw_data_json?.avatar_url ||
+        user?.photo_url;
+
+    return (
+        <div className="flex flex-col min-h-screen bg-black text-white p-4 pb-24">
+            <header className="flex items-center justify-between mb-8 mt-2 px-1">
+                <h1 className="text-3xl font-bold tracking-tight text-white">Feed</h1>
+
+                {/* User Icon - Click to view profile */}
+                <button
+                    onClick={() => setShowProfile(true)}
+                    className="w-10 h-10 rounded-full border border-white/10 p-[2px] hover:scale-105 transition-transform cursor-pointer relative group"
+                >
+                    <div className="w-full h-full rounded-full overflow-hidden bg-zinc-800 relative z-10 flex items-center justify-center">
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                    (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                                }}
+                            />
+                        ) : null}
+                        <div className={`w-full h-full flex items-center justify-center text-zinc-400 fallback-icon ${avatarUrl ? 'hidden' : ''}`}>
+                            <UserIcon className="w-5 h-5" />
+                        </div>
+                    </div>
+                </button>
+            </header>
+
+            <AnimatePresence>
+                {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+            </AnimatePresence>
+
+            <div className="flex-1">
+                {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="bg-[#121212] border border-white/5 rounded-2xl overflow-hidden h-[280px] animate-pulse flex flex-col">
+                                <div className="h-40 bg-zinc-800/50 w-full" />
+                                <div className="p-4 flex-1 flex flex-col space-y-3">
+                                    <div className="h-4 bg-zinc-800/50 rounded w-3/4" />
+                                    <div className="h-4 bg-zinc-800/50 rounded w-1/2" />
+                                    <div className="mt-auto pt-3 border-t border-white/5 flex items-center gap-2">
+                                        <div className="h-3 bg-zinc-800/50 rounded w-6" />
+                                        <div className="h-3 bg-zinc-800/50 rounded w-16" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {articles.map((article, index) => (
+                            <motion.a
+                                key={index}
+                                href={article.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                className="group flex flex-col bg-[#121212] border border-white/5 rounded-2xl overflow-hidden hover:border-white/20 transition-all hover:-translate-y-1 shadow-sm hover:shadow-xl hover:shadow-white/5"
+                            >
+                                {/* Article Image */}
+                                <div className="aspect-video relative overflow-hidden bg-zinc-900 w-full">
+                                    <img
+                                        src={article.image}
+                                        alt={article.title}
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'; }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent opacity-60"></div>
+                                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-medium border border-white/10 text-white flex items-center gap-1">
+                                        <Globe className="w-3 h-3 text-zinc-400" />
+                                        {article.source}
+                                    </div>
+                                </div>
+
+                                <div className="p-4 flex-1 flex flex-col">
+                                    <h3 className="font-bold text-[15px] mb-3 leading-snug text-zinc-100 group-hover:text-emerald-400 transition-colors line-clamp-2">
+                                        {article.title}
+                                    </h3>
+
+                                    <div className="mt-auto flex items-center justify-between pt-3 border-t border-white/5">
+                                        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                                            <Calendar className="w-3 h-3" />
+                                            {new Date(article.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </div>
+
+                                        <span className="flex items-center gap-1 text-xs font-medium text-emerald-500 opacity-0 transform translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                                            Read more <ExternalLink className="w-3 h-3" />
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.a>
+                        ))}
+                    </div>
+                )}
+
+                {!loading && articles.length === 0 && (
+                    <div className="flex flex-col items-center justify-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/30">
+                        <p className="text-zinc-500 mb-2">No articles found</p>
+                        <p className="text-xs text-zinc-600">Check your connection or try again later</p>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -1,263 +1,142 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Briefcase, Trash2, Bookmark as BookmarkIcon } from 'lucide-react';
+import { MapPin, Briefcase, Trash2, Bookmark as BookmarkIcon, Loader2, DollarSign, ExternalLink } from 'lucide-react';
+import { bookmarksService } from '../services/bookmarks';
+import type { Bookmark } from '../services/jobs';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Bookmarks = () => {
-    const [savedJobs, setSavedJobs] = useState<any[]>([]);
-
-    const allJobs = [
-        {
-            id: 1,
-            title: "Senior Frontend Developer",
-            poster: { name: "John Doe", avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop", role: "Frontend Lead" },
-            company: "TechFlow",
-            location: "San Francisco, CA (Remote)",
-            salary: "$120k - $160k",
-            type: "Full-time",
-            postedAt: "2h ago",
-            color: "bg-blue-600",
-            description: "We are looking for an experienced Frontend Developer to lead our core product team. You will be working with React, TypeScript, and Tailwind CSS to build beautiful user interfaces."
-        },
-        {
-            id: 2,
-            title: "Product Designer",
-            poster: { name: "Jane Smith", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop", role: "Head of Design" },
-            company: "Creative Studio",
-            location: "New York, NY",
-            salary: "$100k - $140k",
-            type: "Full-time",
-            postedAt: "5h ago",
-            color: "bg-purple-600",
-            description: "Join our award-winning design team. We are looking for someone with a keen eye for detail and a passion for creating intuitive user experiences."
-        },
-        {
-            id: 3,
-            title: "Product Manager",
-            poster: { name: "Mike Ross", avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop", role: "Product Director" },
-            company: "Pearson Hardman",
-            location: "Chicago, IL",
-            salary: "$130k - $180k",
-            type: "Full-time",
-            postedAt: "1d ago",
-            color: "bg-emerald-600",
-            description: "Lead the strategy and execution of our flagship product. You will work closely with engineering and design to deliver value to our customers."
-        },
-        {
-            id: 4,
-            title: "Software Engineer (Backend)",
-            poster: { name: "Sarah Connor", avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop", role: "Engineering Manager" },
-            company: "Skynet Systems",
-            location: "Austin, TX (Hybrid)",
-            salary: "$115k - $155k",
-            type: "Full-time",
-            postedAt: "1d ago",
-            color: "bg-red-600",
-            description: "Build scalable backend services using Go and Kubernetes. Experience with distributed systems is a huge plus."
-        },
-        {
-            id: 5,
-            title: "Full Stack Developer",
-            poster: { name: "Alex Murphy", avatarUrl: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&auto=format&fit=crop", role: "Tech Lead" },
-            company: "OCP Corp",
-            location: "Detroit, MI",
-            salary: "$110k - $150k",
-            type: "Contract",
-            postedAt: "2d ago",
-            color: "bg-slate-600",
-            description: "We are modernizing our legacy systems. Looking for a developer proficient in both React and Node.js to help us transition."
-        },
-        {
-            id: 6,
-            title: "Chief Executive Officer",
-            poster: { name: "Bruce Wayne", avatarUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop", role: "Owner" },
-            company: "Wayne Enterprises",
-            location: "Gotham City",
-            salary: "$500k+",
-            type: "Full-time",
-            postedAt: "3d ago",
-            color: "bg-indigo-900",
-            description: "Looking for a capable executive to manage day-to-day operations while I am... away. Must be discreet and handle high-pressure situations."
-        },
-        {
-            id: 7,
-            title: "Creative Director",
-            poster: { name: "Diana Prince", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop", role: "Design Lead" },
-            company: "Themyscira Arts",
-            location: "Washington, DC",
-            salary: "$140k - $190k",
-            type: "Full-time",
-            postedAt: "3d ago",
-            color: "bg-amber-600",
-            description: "Lead our creative vision across all media channels. We cherish strength, wisdom, and beautiful design."
-        },
-        {
-            id: 8,
-            title: "Junior Web Developer",
-            poster: { name: "Peter Parker", avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop", role: "Freelancer" },
-            company: "Daily Bugle",
-            location: "New York, NY",
-            salary: "$60k - $80k",
-            type: "Part-time",
-            postedAt: "4d ago",
-            color: "bg-red-500",
-            description: "Help us maintain our news website. Flexible hours. Must be able to get pictures of Spiderman... I mean, bugs. Fix bugs."
-        },
-        {
-            id: 9,
-            title: "Lead Robotics Engineer",
-            poster: { name: "Tony Stark", avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop", role: "CTO" },
-            company: "Stark Industries",
-            location: "Malibu, CA",
-            salary: "$250k - $400k",
-            type: "Full-time",
-            postedAt: "5d ago",
-            color: "bg-yellow-600",
-            description: "Working on cutting-edge armor technology. Need someone who understands AI, propulsion systems, and advanced metallurgy."
-        },
-        {
-            id: 10,
-            title: "Security Operations Specialist",
-            poster: { name: "Natasha Romanoff", avatarUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop", role: "Head of Security" },
-            company: "SHIELD",
-            location: "Unknown",
-            salary: "$120k - $160k",
-            type: "Full-time",
-            postedAt: "1w ago",
-            color: "bg-zinc-800",
-            description: "Cybersecurity and physical security role. Requires extensive background checks. Travel required."
-        },
-        {
-            id: 11,
-            title: "Marketing Manager",
-            poster: { name: "Mike Ross", avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop", role: "Product Director" },
-            company: "Pearson Hardman",
-            location: "New York, NY",
-            salary: "$110k - $150k",
-            type: "Full-time",
-            postedAt: "1w ago",
-            color: "bg-teal-600",
-            description: "Drive growth for our new legal tech division. Looking for someone with a strong background in B2B marketing."
-        },
-        {
-            id: 12,
-            title: "AI Research Scientist",
-            poster: { name: "Sarah Connor", avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&auto=format&fit=crop", role: "Engineering Manager" },
-            company: "Cyberdyne",
-            location: "San Francisco, CA",
-            salary: "$180k - $250k",
-            type: "Full-time",
-            postedAt: "1w ago",
-            color: "bg-cyan-600",
-            description: "Researching neural networks and autonomous learning. Help us build the future of intelligence."
-        },
-        {
-            id: 13,
-            title: "UI Engineer",
-            poster: { name: "Jane Smith", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop", role: "Head of Design" },
-            company: "Creative Studio",
-            location: "Remote",
-            salary: "$90k - $120k",
-            type: "Contract",
-            postedAt: "2w ago",
-            color: "bg-pink-600",
-            description: "Implement pixel-perfect designs. Must know Storybook and Motion libraries."
-        },
-        {
-            id: 14,
-            title: "DevOps Engineer",
-            poster: { name: "John Doe", avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop", role: "Frontend Lead" },
-            company: "TechFlow",
-            location: "Denver, CO",
-            salary: "$130k - $170k",
-            type: "Full-time",
-            postedAt: "2w ago",
-            color: "bg-orange-600",
-            description: "Manage our CI/CD pipelines and AWS infrastructure. Terraform experience required."
-        },
-        {
-            id: 15,
-            title: "Data Analyst",
-            poster: { name: "Diana Prince", avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop", role: "Design Lead" },
-            company: "Museum of Antiquities",
-            location: "Paris, France",
-            salary: "$80k - $110k",
-            type: "Full-time",
-            postedAt: "3w ago",
-            color: "bg-rose-600",
-            description: "Analyze historical data trends. Must be fluent in multiple ancient languages... or just SQL."
-        }
-    ];
+    const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const loadSavedJobs = () => {
-            const saved = localStorage.getItem('savedJobs');
-            if (saved) {
-                const savedIds = JSON.parse(saved);
-                const jobs = allJobs.filter(job => savedIds.includes(job.id));
-                setSavedJobs(jobs);
-            }
-        };
-
-        loadSavedJobs();
-        window.addEventListener('storage', loadSavedJobs);
-        return () => window.removeEventListener('storage', loadSavedJobs);
+        loadBookmarks();
     }, []);
 
-    const removeBookmark = (id: number) => {
-        const updatedJobs = savedJobs.filter(job => job.id !== id);
-        setSavedJobs(updatedJobs);
-
-        const saved = localStorage.getItem('savedJobs');
-        if (saved) {
-            const savedIds: number[] = JSON.parse(saved);
-            const newIds = savedIds.filter((jobId: number) => jobId !== id);
-            localStorage.setItem('savedJobs', JSON.stringify(newIds));
+    const loadBookmarks = async () => {
+        try {
+            setLoading(true);
+            const data = await bookmarksService.getAllBookmarks();
+            setBookmarks(data);
+        } catch (error) {
+            console.error("Failed to load bookmarks:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
+    const removeBookmark = async (id: string) => {
+        try {
+            // Optimistic update
+            setBookmarks(prev => prev.filter(b => b.job_id !== id));
+            await bookmarksService.deleteBookmark(id);
+        } catch (error) {
+            console.error("Failed to remove bookmark:", error);
+            // Refresh on error
+            loadBookmarks();
+        }
+    };
+
+    const formatSalary = (range: number[] | undefined) => {
+        if (!range || range.length !== 2) return '';
+        const min = Math.round(range[0] / 1000);
+        const max = Math.round(range[1] / 1000);
+        return `$${min}k - $${max}k`;
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-black text-white pb-24 pt-8 px-4">
-            <h1 className="text-2xl font-bold mb-6 px-2">Saved Jobs</h1>
+            <header className="mb-8 px-2">
+                <h1 className="text-3xl font-bold tracking-tight">Bookmarks</h1>
+                <p className="text-zinc-500 text-sm mt-1">Jobs you've saved for later review</p>
+            </header>
 
-            {savedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-[50vh] text-zinc-500">
-                    <BookmarkIcon className="w-12 h-12 mb-4 opacity-50" />
-                    <p className="text-lg">No saved jobs yet</p>
-                    <p className="text-sm">Tap the bookmark icon on any job to save it.</p>
+            {bookmarks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[50vh] text-zinc-500 text-center">
+                    <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-zinc-800 opacity-50">
+                        <BookmarkIcon className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">No bookmarks yet</h3>
+                    <p className="max-w-xs text-sm leading-relaxed">
+                        Tap the bookmark icon on any job card to save it here for later.
+                    </p>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {savedJobs.map((job) => (
-                        <div key={job.id} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="font-bold text-lg">{job.title}</h3>
-                                    <p className="text-sm text-zinc-400">{job.company}</p>
-                                </div>
-                                <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/10 text-zinc-300 border border-white/10">
-                                    Saved
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-4 text-xs text-zinc-400">
-                                <span className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {job.location}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                    <Briefcase className="w-3 h-3" />
-                                    {job.type}
-                                </span>
-                            </div>
-
-                            <button
-                                onClick={() => removeBookmark(job.id)}
-                                className="mt-2 text-xs text-red-400 flex items-center gap-1 hover:text-red-300 transition-colors self-start"
+                    <AnimatePresence>
+                        {bookmarks.map((bookmark) => (
+                            <motion.div
+                                key={bookmark.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-[#121212] border border-white/5 rounded-3xl p-6 relative overflow-hidden group shadow-xl"
                             >
-                                <Trash2 className="w-3 h-3" />
-                                Remove Bookmark
-                            </button>
-                        </div>
-                    ))}
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-lg text-white group-hover:text-emerald-400 transition-colors line-clamp-1">{bookmark.job.company.name}</h3>
+                                                {bookmark.job.company.website && (
+                                                    <a href={bookmark.job.company.website} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-white transition-colors">
+                                                        <ExternalLink className="w-3 h-3" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
+                                                {bookmark.job.problem_statement}
+                                            </p>
+                                        </div>
+                                        <div className="bg-white/5 p-2 rounded-xl border border-white/5">
+                                            <BookmarkIcon className="w-5 h-5 text-white fill-current" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex items-center gap-2 text-xs text-zinc-500 bg-black/30 p-2 rounded-xl border border-white/5">
+                                            <MapPin className="w-3.5 h-3.5 text-zinc-600" />
+                                            <span className="truncate">{bookmark.job.constraints?.location || bookmark.job.constraints_json?.location || 'Remote'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-zinc-500 bg-black/30 p-2 rounded-xl border border-white/5">
+                                            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                                            <span className="truncate">
+                                                {formatSalary(bookmark.job.constraints?.salary_range || bookmark.job.constraints_json?.salary_range)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {bookmark.notes && (
+                                        <div className="p-3 bg-zinc-800/30 rounded-2xl border border-dashed border-zinc-700/50">
+                                            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">My Notes</p>
+                                            <p className="text-xs text-zinc-400 italic font-light">"{bookmark.notes}"</p>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-2 flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-2 text-[10px] text-zinc-600 uppercase font-bold tracking-widest">
+                                            <Briefcase className="w-3 h-3" />
+                                            {bookmark.job.constraints?.role_type || bookmark.job.constraints_json?.role_type || 'Full-time'}
+                                        </div>
+                                        <button
+                                            onClick={() => removeBookmark(bookmark.job_id)}
+                                            className="text-xs text-red-500/80 flex items-center gap-1.5 hover:text-red-400 transition-colors py-1 px-3 hover:bg-red-500/5 rounded-lg border border-transparent hover:border-red-500/10"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Remove</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 </div>
             )}
         </div>

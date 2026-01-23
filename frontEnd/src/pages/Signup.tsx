@@ -120,7 +120,7 @@ const Signup = () => {
                         <div className="mb-10 text-center">
                             <h1 className="text-3xl font-bold tracking-tighter mb-2">Enter OTP</h1>
                             <p className="text-zinc-500 font-light">
-                                We sent a code to <span className="text-white">email@domain.com</span>
+                                We sent a code to your email
                             </p>
                         </div>
 

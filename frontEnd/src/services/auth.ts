@@ -1,87 +1,38 @@
-import { getCookie } from '../utils/cookieUtils';
+import { api } from './api';
+import { useAuthStore } from '../store/useAuthStore';
+import type { User } from '../store/useAuthStore';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://saber-api-backend.vercel.app/api';
-
-export interface User {
-    id: string;
-    role: 'candidate' | 'recruiter' | 'admin';
-    name: string;
-    email: string;
-    photo_url: string;
-    created_at: string;
-}
-
-export interface AuthResponse {
+interface OAuthResponse {
     token: string;
     user: User;
 }
 
 export const authService = {
-    async login(provider: string, code: string, redirectUri?: string): Promise<AuthResponse> {
-        const response = await fetch(`${API_URL}/auth/oauth/callback`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                provider,
-                code,
-                redirect_uri: redirectUri,
-            }),
+    oauthCallback: async (provider: string, code: string, redirect_uri: string): Promise<OAuthResponse> => {
+        const response = await api.post<OAuthResponse>('/auth/oauth/callback', {
+            provider,
+            code,
+            redirect_uri,
         });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Failed to authenticate with ${provider}`);
-        }
-
-        return await response.json();
+        return response.data;
     },
 
-    async linkProvider(provider: string, code: string, redirectUri?: string): Promise<{ status: string; message: string }> {
-        const token = getCookie('token');
-        if (!token) throw new Error('No auth token found');
-
-        const response = await fetch(`${API_URL}/auth/link-provider`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                provider,
-                code,
-                redirect_uri: redirectUri,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Failed to link ${provider}`);
-        }
-
-        return await response.json();
+    getMe: async (): Promise<User> => {
+        const response = await api.get<{ user: User }>('/auth/me');
+        return response.data.user;
     },
 
-    async me(): Promise<User> {
-        const token = getCookie('token');
-        if (!token) throw new Error('No auth token found');
-
-        const response = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch user session');
-        }
-
-        return await response.json();
+    // Legacy support or if the backend supports manual logout call
+    logout: async () => {
+        useAuthStore.getState().logout();
     },
 
-    // Deprecated: Alias for backward compatibility if needed, but better to use generic login
-    async googleLogin(code: string, redirectUri?: string): Promise<AuthResponse> {
-        return this.login('google', code, redirectUri);
+    linkProvider: async (provider: string, code: string, redirect_uri: string): Promise<{ status: string; message: string }> => {
+        const response = await api.post('/auth/link-provider', {
+            provider,
+            code,
+            redirect_uri
+        });
+        return response.data;
     }
 };

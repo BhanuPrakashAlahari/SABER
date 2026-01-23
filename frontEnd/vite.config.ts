@@ -5,4 +5,13 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api/tech': {
+        target: 'https://tech-feed-beta.vercel.app',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })
