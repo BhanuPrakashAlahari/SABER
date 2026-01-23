@@ -40,7 +40,7 @@ const Bookmarks = () => {
         if (!range || range.length !== 2) return '';
         const min = Math.round(range[0] / 1000);
         const max = Math.round(range[1] / 1000);
-        return `$${min}k - $${max}k`;
+        return `₹${min}k - ₹${max}k`;
     };
 
     if (loading) {
@@ -103,12 +103,12 @@ const Bookmarks = () => {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="flex items-center gap-2 text-xs text-zinc-500 bg-black/30 p-2 rounded-xl border border-white/5">
                                             <MapPin className="w-3.5 h-3.5 text-zinc-600" />
-                                            <span className="truncate">{bookmark.job.constraints?.location || bookmark.job.constraints_json?.location || 'Remote'}</span>
+                                            <span className="truncate">{bookmark.job.constraints?.location || 'Remote'}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-xs text-zinc-500 bg-black/30 p-2 rounded-xl border border-white/5">
                                             <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                                             <span className="truncate">
-                                                {formatSalary(bookmark.job.constraints?.salary_range || bookmark.job.constraints_json?.salary_range)}
+                                                {formatSalary(bookmark.job.constraints?.salary_range)}
                                             </span>
                                         </div>
                                     </div>
@@ -123,7 +123,7 @@ const Bookmarks = () => {
                                     <div className="mt-2 flex items-center justify-between pt-4 border-t border-white/5">
                                         <div className="flex items-center gap-2 text-[10px] text-zinc-600 uppercase font-bold tracking-widest">
                                             <Briefcase className="w-3 h-3" />
-                                            {bookmark.job.constraints?.role_type || bookmark.job.constraints_json?.role_type || 'Full-time'}
+                                            {bookmark.job.constraints?.employment_type || 'Full-time'}
                                         </div>
                                         <button
                                             onClick={() => removeBookmark(bookmark.job_id)}

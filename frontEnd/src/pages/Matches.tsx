@@ -89,8 +89,8 @@ const Matches = () => {
                         >
                             <div className="p-5 flex items-center gap-4">
                                 <div className="w-14 h-14 rounded-2xl bg-zinc-800 overflow-hidden border border-white/5 flex-shrink-0">
-                                    {match.job.company.logo ? (
-                                        <img src={match.job.company.logo} alt={match.job.company.name} className="w-full h-full object-cover" />
+                                    {match.job.company.logo_url ? (
+                                        <img src={match.job.company.logo_url} alt={match.job.company.name} className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-zinc-500 font-bold text-xl uppercase">
                                             {match.job.company.name.charAt(0)}
@@ -139,8 +139,8 @@ const Matches = () => {
                                 <ChevronRight className="w-6 h-6 rotate-180" />
                             </button>
                             <div className="w-10 h-10 rounded-xl bg-zinc-800 overflow-hidden border border-white/5">
-                                {selectedMatch.job.company.logo ? (
-                                    <img src={selectedMatch.job.company.logo} alt={selectedMatch.job.company.name} className="w-full h-full object-cover" />
+                                {selectedMatch.job.company.logo_url ? (
+                                    <img src={selectedMatch.job.company.logo_url} alt={selectedMatch.job.company.name} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-zinc-500 font-bold uppercase">
                                         {selectedMatch.job.company.name.charAt(0)}
