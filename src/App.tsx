@@ -18,6 +18,7 @@ import { authService } from './services/auth';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 import { UpgradeModal } from './components/common/UpgradeModal';
+import { PrivacyPolicy, TermsAndConditions, RefundPolicy, ShippingPolicy, Contact } from './pages/Legal';
 
 // Guard for routes that require the user to be fully onboarded
 const ProtectedLayout = () => {
@@ -88,6 +89,13 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/auth/callback" element={<Login />} />
+
+            {/* Legal / Compliance Routes */}
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/shipping-policy" element={<ShippingPolicy />} />
+            <Route path="/contact" element={<Contact />} />
 
             {/* Onboarding Route */}
             <Route element={<OnboardingGuard />}>

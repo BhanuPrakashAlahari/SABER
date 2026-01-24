@@ -21,8 +21,17 @@ const Home = () => {
                 <GetStarted />
             </main>
 
-            <footer className="py-6 text-center text-gray-400 text-xs">
-                Made with <span className="text-red-500">❤️</span> by Stark Protocol S4
+            <footer className="py-8 text-center text-gray-400 text-xs border-t border-white/5 bg-black">
+                <div className="mb-4">
+                    Made with <span className="text-red-500">❤️</span> by Stark Protocol S4
+                </div>
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-zinc-500">
+                    <Link to="/privacy-policy" className="hover:text-zinc-300 transition-colors">Privacy Policy</Link>
+                    <Link to="/terms-and-conditions" className="hover:text-zinc-300 transition-colors">Terms & Conditions</Link>
+                    <Link to="/refund-policy" className="hover:text-zinc-300 transition-colors">Refund Policy</Link>
+                    <Link to="/shipping-policy" className="hover:text-zinc-300 transition-colors">Shipping Policy</Link>
+                    <Link to="/contact" className="hover:text-zinc-300 transition-colors">Contact Us</Link>
+                </div>
             </footer>
         </div>
     );
